@@ -1,0 +1,228 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Socket.IO CORS Demo Client</title>
+    <style>
+      body {
+        font-family: Arial, sans-serif;
+        max-width: 800px;
+        margin: 0 auto;
+        padding: 20px;
+        background-color: #f5f5f5;
+      }
+      .container {
+        background: white;
+        padding: 20px;
+        border-radius: 8px;
+        box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+      }
+      .status {
+        padding: 10px;
+        margin: 10px 0;
+        border-radius: 4px;
+        font-weight: bold;
+      }
+      .connected {
+        background-color: #d4edda;
+        color: #155724;
+        border: 1px solid #c3e6cb;
+      }
+      .disconnected {
+        background-color: #f8d7da;
+        color: #721c24;
+        border: 1px solid #f5c6cb;
+      }
+      .error {
+        background-color: #fff3cd;
+        color: #856404;
+        border: 1px solid #ffeaa7;
+      }
+      button {
+        background-color: #007bff;
+        color: white;
+        border: none;
+        padding: 10px 20px;
+        border-radius: 4px;
+        cursor: pointer;
+        margin: 5px;
+      }
+      button:hover {
+        background-color: #0056b3;
+      }
+      button:disabled {
+        background-color: #6c757d;
+        cursor: not-allowed;
+      }
+      .log {
+        background-color: #f8f9fa;
+        border: 1px solid #dee2e6;
+        border-radius: 4px;
+        padding: 10px;
+        margin: 10px 0;
+        height: 300px;
+        overflow-y: auto;
+        font-family: "Courier New", monospace;
+        font-size: 14px;
+      }
+      .log-entry {
+        margin: 2px 0;
+        padding: 2px 0;
+        border-bottom: 1px solid #eee;
+      }
+      .timestamp {
+        color: #666;
+        font-size: 12px;
+      }
+      .info {
+        background-color: #d1ecf1;
+        color: #0c5460;
+        padding: 15px;
+        border-radius: 4px;
+        margin: 10px 0;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="container">
+      <h1>Socket.IO CORS Demo Client</h1>
+
+      <div class="info">
+        <strong>Current Port:</strong> <span id="currentPort">Loading...</span
+        ><br />
+        <strong>Server:</strong> http://localhost:8000<br />
+        <strong>Approved Ports:</strong> 9999 only<br />
+        <strong>Expected Result:</strong> This should fail CORS check since
+        ports 3000/3001 are not approved
+      </div>
+
+      <div id="connectionStatus" class="status disconnected">Disconnected</div>
+
+      <div>
+        <button id="connectBtn" onclick="connect()">Connect</button>
+        <button id="disconnectBtn" onclick="disconnect()" disabled>
+          Disconnect
+        </button>
+        <button id="pingBtn" onclick="sendPing()" disabled>Send Ping</button>
+        <button id="clearLogBtn" onclick="clearLog()">Clear Log</button>
+      </div>
+
+      <div class="log" id="log"></div>
+    </div>
+
+    <script src="https://cdn.socket.io/4.7.4/socket.io.min.js"></script>
+    <script>
+      let socket = null;
+      const log = document.getElementById("log");
+      const status = document.getElementById("connectionStatus");
+      const connectBtn = document.getElementById("connectBtn");
+      const disconnectBtn = document.getElementById("disconnectBtn");
+      const pingBtn = document.getElementById("pingBtn");
+
+      // Display current port
+      document.getElementById("currentPort").textContent = window.location.port;
+
+      function addLog(message, type = "info") {
+        const entry = document.createElement("div");
+        entry.className = "log-entry";
+        const timestamp = new Date().toLocaleTimeString();
+        entry.innerHTML = `<span class="timestamp">[${timestamp}]</span> ${message}`;
+        log.appendChild(entry);
+        log.scrollTop = log.scrollHeight;
+      }
+
+      function updateConnectionStatus(connected, message = "") {
+        if (connected) {
+          status.textContent = "Connected" + (message ? ` - ${message}` : "");
+          status.className = "status connected";
+          connectBtn.disabled = true;
+          disconnectBtn.disabled = false;
+          pingBtn.disabled = false;
+        } else {
+          status.textContent =
+            "Disconnected" + (message ? ` - ${message}` : "");
+          status.className = "status disconnected";
+          connectBtn.disabled = false;
+          disconnectBtn.disabled = true;
+          pingBtn.disabled = true;
+        }
+      }
+
+      function connect() {
+        addLog("🔄 Attempting to connect to Socket.IO server...");
+
+        socket = io("http://localhost:8000", {
+          withCredentials: true,
+          transports: ["websocket", "polling"],
+        });
+
+        socket.on("connect", () => {
+          addLog("✅ Connected successfully! Socket ID: " + socket.id);
+          updateConnectionStatus(true, socket.id);
+        });
+
+        socket.on("connect_error", (error) => {
+          addLog("❌ Connection failed: " + error.message);
+          addLog(
+            "🔍 This is likely due to CORS policy blocking the connection"
+          );
+          updateConnectionStatus(false, "Connection failed");
+          status.className = "status error";
+        });
+
+        socket.on("disconnect", (reason) => {
+          addLog("🔌 Disconnected: " + reason);
+          updateConnectionStatus(false, reason);
+        });
+
+        socket.on("welcome", (data) => {
+          addLog("👋 Welcome message: " + data.message);
+          addLog("📅 Server timestamp: " + data.timestamp);
+        });
+
+        socket.on("pong", (data) => {
+          addLog("🏓 Pong received: " + data.message);
+          addLog(
+            "📤 Original data echoed: " + JSON.stringify(data.originalData)
+          );
+        });
+
+        socket.on("error", (error) => {
+          addLog("⚠️ Socket error: " + error);
+        });
+      }
+
+      function disconnect() {
+        if (socket) {
+          addLog("🔄 Disconnecting...");
+          socket.disconnect();
+          socket = null;
+        }
+      }
+
+      function sendPing() {
+        if (socket && socket.connected) {
+          const data = {
+            message: "Hello from client on port " + window.location.port,
+            timestamp: new Date().toISOString(),
+          };
+          addLog("📤 Sending ping: " + JSON.stringify(data));
+          socket.emit("ping", data);
+        }
+      }
+
+      function clearLog() {
+        log.innerHTML = "";
+      }
+
+      // Initial log
+      addLog("🌐 Socket.IO CORS Demo Client loaded");
+      addLog("📍 Running on port: " + window.location.port);
+      addLog("🎯 Target server: http://localhost:8000");
+      addLog(
+        "⚠️ Expected: CORS should block this connection (port not in approved list)"
+      );
+    </script>
+  </body>
+</html>

@@ -39,7 +39,7 @@ This repository demonstrates potential issues with Socket.IO CORS configuration.
 
 ### Server Configuration
 
-- **Port:** 8080
+- **Port:** 8000
 - **Approved CORS Origins:** Only port `9999`
 - **Expected Behavior:** Should reject connections from ports 3000 and 3001
 
@@ -68,7 +68,7 @@ This repository demonstrates potential issues with Socket.IO CORS configuration.
 
 ## Server Health Check
 
-Visit http://localhost:8080/health to see server status and approved ports.
+Visit http://localhost:8000/health to see server status and approved ports.
 
 ## Files Structure
 
@@ -125,4 +125,5 @@ Use this repository to demonstrate Socket.IO CORS behavior by:
 ## License
 
 MIT
+
 # socket-io-cors-issue

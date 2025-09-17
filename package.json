@@ -1,0 +1,27 @@
+{
+  "name": "socket-io-cors-demo",
+  "version": "1.0.0",
+  "description": "A simple Socket.IO client/server demo to demonstrate CORS issues",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js",
+    "server": "node server.js",
+    "client-3000": "npx http-server client -p 3000",
+    "client-3001": "npx http-server client -p 3001",
+    "dev": "npm run server & npm run client-3000 & npm run client-3001"
+  },
+  "dependencies": {
+    "express": "^4.18.2",
+    "socket.io": "^4.7.4"
+  },
+  "devDependencies": {
+    "http-server": "^14.1.1"
+  },
+  "keywords": [
+    "socket.io",
+    "cors",
+    "demo"
+  ],
+  "author": "",
+  "license": "MIT"
+}
